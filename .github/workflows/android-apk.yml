@@ -1,0 +1,50 @@
+YAML
+
+name: Build Saba Recycling Android APK
+
+on:
+  push:
+    paths:
+      - 'Saba_Recycling_Android_Starter.zip'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract Android project
+        run: |
+          unzip -q Saba_Recycling_Android_Starter.zip -d project
+          find project -name settings.gradle.kts -print
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Build Android APK
+        run: |
+          PROJECT_DIR=$(dirname "$(find project -name settings.gradle.kts -print -quit)")
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "Android project settings.gradle.kts not found"
+            exit 1
+          fi
+          gradle -p "$PROJECT_DIR" assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Saba-Recycling-Android-APK
+          path: project/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
